@@ -122,5 +122,8 @@ export const fr = {
     logoRead: "Impossible de lire cette image.",
     required: "Champ obligatoire.",
     generic: "Une erreur est survenue.",
+    storageFull: "Espace de stockage du navigateur plein. Libérez de l'espace puis réessayez (vos données existantes sont intactes).",
+    storageUpgrade: "La base de données locale est dans une version incompatible. Fermez les autres onglets FaturaDZ et rechargez la page.",
+    storageUnavailable: "Le stockage local est indisponible (navigation privée ou accès bloqué). Rechargez la page ou changez de navigateur.",
   },
 } as const;

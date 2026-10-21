@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, Card, Notice, TextField } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 import { getDb } from "@/db";
+import { describeDbError } from "@/db/errors";
 import { newId, saveClient } from "@/db/repository";
 import type { Client } from "@/db/schema";
 import { fr } from "@/i18n/fr";
@@ -38,8 +39,8 @@ function ClientForm({ initial, onDone }: { initial: Client; onDone: () => void }
     try {
       await saveClient(getDb(), form);
       onDone();
-    } catch {
-      setError(fr.errors.generic);
+    } catch (e) {
+      setError(describeDbError(e));
     }
   }
 

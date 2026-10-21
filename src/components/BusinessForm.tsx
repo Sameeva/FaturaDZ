@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 import { getDb } from "@/db";
+import { describeDbError } from "@/db/errors";
 import { saveBusiness } from "@/db/repository";
 import type { Business } from "@/db/schema";
 import { fr } from "@/i18n/fr";
@@ -71,8 +72,8 @@ export function BusinessForm({ initial }: { initial: Business | null }) {
     try {
       await saveBusiness(getDb(), business);
       setMessage({ tone: "success", text: fr.common.saved });
-    } catch {
-      setMessage({ tone: "danger", text: fr.errors.generic });
+    } catch (e) {
+      setMessage({ tone: "danger", text: describeDbError(e) });
     }
   }
 

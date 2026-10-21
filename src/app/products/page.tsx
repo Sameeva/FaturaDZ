@@ -5,6 +5,7 @@ import { tvaOptions } from "@/components/BusinessForm";
 import { Button, Card, Notice, SelectField, TextField } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 import { getDb } from "@/db";
+import { describeDbError } from "@/db/errors";
 import { newId, saveProduct } from "@/db/repository";
 import type { Product } from "@/db/schema";
 import { fr } from "@/i18n/fr";
@@ -34,8 +35,8 @@ function ProductForm({ initial, defaultRate, onDone }: { initial: Product | null
         createdAt: initial?.createdAt ?? Date.now(),
       });
       onDone();
-    } catch {
-      setError(fr.errors.generic);
+    } catch (e) {
+      setError(describeDbError(e));
     }
   }
 
