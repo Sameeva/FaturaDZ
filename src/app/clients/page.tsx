@@ -95,7 +95,7 @@ export default function ClientsPage() {
           <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
             <div>
               <p className="font-medium">{c.name}</p>
-              <p className="text-xs text-muted">{[c.address, c.nif && `NIF ${c.nif}`].filter(Boolean).join(" · ")}</p>
+              <p className="text-xs text-muted">{[c.address, c.nif && `${fr.fiscalShort.nif} ${c.nif}`].filter(Boolean).join(" · ")}</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => setEditing(c)}>{fr.common.edit}</Button>

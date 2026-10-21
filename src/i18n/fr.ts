@@ -65,6 +65,8 @@ export const fr = {
     notes: "Notes",
     client: "Client",
   },
+  /** Short fiscal-identifier labels used on printed documents and compact lists. */
+  fiscalShort: { nif: "NIF", nis: "NIS", rc: "RC", articleImposition: "Art. imp." },
   totals: {
     ht: "Total HT",
     tva: "TVA",
