@@ -64,3 +64,59 @@ textarea {
   background: var(--surface);
   color: var(--foreground);
 }
+
+/* Invoice sheet (components/invoice/InvoicePrint.tsx): fixed light palette, whatever the app theme. */
+.invoice-sheet {
+  background: #fff;
+  color: #16181d;
+  font-size: 9pt;
+  line-height: 1.4;
+}
+.invoice-box {
+  border: 1px solid #c9ced6;
+  border-radius: 3px;
+  padding: 8px;
+}
+.invoice-label {
+  color: #5d6470;
+  font-size: 7pt;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.invoice-cell {
+  border: 1px solid #c9ced6;
+  padding: 4px;
+  overflow-wrap: anywhere;
+}
+.invoice-footer {
+  margin-top: 16px;
+  color: #5d6470;
+  font-size: 7pt;
+  text-align: center;
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #16181d !important;
+  }
+  /* App chrome: nav bar and anything marked print:hidden. */
+  body > header,
+  body > main > :not(.invoice-sheet) {
+    display: none !important;
+  }
+  body > main {
+    max-width: none;
+    padding: 0;
+  }
+  .invoice-sheet {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
