@@ -1,3 +1,4 @@
+import { fr } from "@/i18n/fr";
 import { ID_FORMATS } from "./fiscal-config";
 
 /**
@@ -17,12 +18,12 @@ function checkDigits(value: string, lengths: readonly number[], label: string): 
   return null;
 }
 
-export const checkNif = (v: string) => checkDigits(v, ID_FORMATS.nif.lengths, "NIF");
-export const checkNis = (v: string) => checkDigits(v, ID_FORMATS.nis.lengths, "NIS");
+export const checkNif = (v: string) => checkDigits(v, ID_FORMATS.nif.lengths, fr.fields.nif);
+export const checkNis = (v: string) => checkDigits(v, ID_FORMATS.nis.lengths, fr.fields.nis);
 export const checkRib = (v: string) => checkDigits(v, ID_FORMATS.rib.lengths, "RIB");
 
 export function checkArticleImposition(value: string): string | null {
   const v = digitsOnly(value);
   if (v === "") return null;
-  return /^\d+$/.test(v) ? null : "Article d'imposition : chiffres uniquement.";
+  return /^\d+$/.test(v) ? null : `${fr.fields.articleImposition} : chiffres uniquement.`;
 }

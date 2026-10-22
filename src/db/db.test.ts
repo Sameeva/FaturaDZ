@@ -1,7 +1,9 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FaturaDb } from "./index";
-import { exportBackup, parseBackup, reconcileCounters, restoreBackup } from "./backup";
+import { describeDbError } from "./errors";
+import { fr } from "@/i18n/fr";
+import { exportBackup, MAX_BACKUP_BYTES, parseBackup, reconcileCounters, restoreBackup } from "./backup";
 import { deleteDraft, duplicateAsDraft, finalizeDocument, newDraft, saveBusiness, saveDraft } from "./repository";
 import type { Business, DraftDocument } from "./schema";
 
@@ -216,5 +218,89 @@ describe("backup", () => {
     backup.documents.push({ ...final, id: "other", number: "FA-2026-0007" });
     backup.counters = [];
     expect(reconcileCounters(backup)).toEqual([{ key: "facture-2026", last: 7 }]);
+  });
+});
+
+describe("describeDbError", () => {
+  it("explains quota, upgrade and unavailable-storage failures", () => {
+    const named = (name: string) => Object.assign(new Error("x"), { name });
+    expect(describeDbError(named("QuotaExceededError"))).toBe(fr.errors.storageFull);
+    expect(describeDbError(named("VersionError"))).toBe(fr.errors.storageUpgrade);
+    expect(describeDbError(named("DatabaseClosedError"))).toBe(fr.errors.storageUnavailable);
+    // Dexie wraps the native error in `inner`
+    expect(describeDbError(Object.assign(new Error("wrapped"), { name: "AbortError", inner: named("QuotaExceededError") }))).toBe(fr.errors.storageFull);
+  });
+
+  it("passes our own French messages through and hides unknown errors", () => {
+    expect(describeDbError(new Error("Un document finalisé ne peut pas être modifié."))).toBe("Un document finalisé ne peut pas être modifié.");
+    expect(describeDbError("boom")).toBe(fr.errors.generic);
+    expect(describeDbError(null)).toBe(fr.errors.generic);
+  });
+});
+
+describe("backup import safety", () => {
+  const validBackup = async () => exportBackup(db);
+
+  it("leaves existing data untouched when the restore fails midway", async () => {
+    await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    const before = await exportBackup(db, new Date(0));
+    const backup = await validBackup();
+    // A duplicate key makes bulkAdd throw inside the restore transaction.
+    backup.clients = [
+      { id: "c1", name: "A", address: "", phone: "", email: "", nif: "", nis: "", rc: "", articleImposition: "", createdAt: 1 },
+      { id: "c1", name: "B", address: "", phone: "", email: "", nif: "", nis: "", rc: "", articleImposition: "", createdAt: 2 },
+    ];
+    await expect(restoreBackup(db, backup)).rejects.toThrow();
+    expect(await exportBackup(db, new Date(0))).toEqual(before);
+  });
+
+  it("rejects truncated, empty and non-object files without touching the database", async () => {
+    const text = JSON.stringify(await validBackup());
+    for (const bad of ["", "null", "[]", "42", '"str"', text.slice(0, text.length / 2)]) {
+      const result = parseBackup(bad);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.error.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("rejects tampered fields: wrong version, bad TVA rate, bad id, bad dates, bad status", async () => {
+    await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    const base = JSON.parse(JSON.stringify(await validBackup()));
+    const tamper = (mutate: (b: typeof base) => void) => {
+      const copy = JSON.parse(JSON.stringify(base));
+      mutate(copy);
+      return parseBackup(JSON.stringify(copy)).ok;
+    };
+    expect(tamper(() => {})).toBe(true);
+    expect(tamper((b) => (b.version = 2))).toBe(false);
+    expect(tamper((b) => (b.documents[0].lines[0].tvaRateBp = 2100))).toBe(false);
+    expect(tamper((b) => (b.documents[0].id = "../etc"))).toBe(false);
+    expect(tamper((b) => (b.documents[0].issueDate = "2026-13-40"))).toBe(false);
+    expect(tamper((b) => (b.documents[0].status = "paid"))).toBe(false);
+    expect(tamper((b) => (b.documents[0].lines[0].unitPriceCentimes = 1.5))).toBe(false);
+    expect(tamper((b) => (b.documents[0].lines[0].quantityMilli = 0))).toBe(false);
+    expect(tamper((b) => (b.documents[0].number = null))).toBe(false);
+    expect(tamper((b) => (b.documents[0].seller = null))).toBe(false);
+    expect(tamper((b) => (b.business.defaultTvaRateBp = 5))).toBe(false);
+  });
+
+  it("rejects duplicate ids and oversized arrays of the wrong type", async () => {
+    const backup = await validBackup();
+    const client = { id: "c1", name: "A", address: "", phone: "", email: "", nif: "", nis: "", rc: "", articleImposition: "", createdAt: 1 };
+    expect(parseBackup(JSON.stringify({ ...backup, clients: [client, client] })).ok).toBe(false);
+    expect(parseBackup(JSON.stringify({ ...backup, clients: "nope" })).ok).toBe(false);
+  });
+
+  it("rejects files above the size limit", () => {
+    expect(parseBackup("x".repeat(MAX_BACKUP_BYTES + 1)).ok).toBe(false);
+  });
+
+  it("accepts a backup with no business profile and restores it as empty settings", async () => {
+    const backup = { ...(await validBackup()), business: null };
+    const parsed = parseBackup(JSON.stringify(backup));
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    await restoreBackup(db, parsed.backup);
+    expect(await db.settings.count()).toBe(0);
   });
 });

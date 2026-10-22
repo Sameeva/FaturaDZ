@@ -4,6 +4,7 @@ import {
   amountToInput,
   divRoundHalfUp,
   formatAmount,
+  formatDA,
   formatPercent,
   formatQuantity,
   parseAmount,
@@ -86,5 +87,32 @@ describe("divRoundHalfUp", () => {
     expect(divRoundHalfUp(BigInt(4), BigInt(10))).toBe(BigInt(0));
     expect(divRoundHalfUp(BigInt(15), BigInt(10))).toBe(BigInt(2));
     expect(divRoundHalfUp(BigInt(25), BigInt(10))).toBe(BigInt(3));
+  });
+});
+
+describe("Algerian Dinar display standard", () => {
+  it("uses a space for thousands, a comma for decimals and the DA suffix", () => {
+    expect(formatDA(0)).toBe("0,00 DA");
+    expect(formatDA(5)).toBe("0,05 DA");
+    expect(formatDA(99_999)).toBe("999,99 DA");
+    expect(formatDA(100_000)).toBe("1 000,00 DA");
+    expect(formatDA(123_456_789_099)).toBe("1 234 567 890,99 DA");
+  });
+
+  it("never uses dots, narrow spaces or DZD in amounts", () => {
+    for (const c of [0, 1, 100, 123_456, 1_000_000_000_00, Number.MAX_SAFE_INTEGER]) {
+      const text = formatDA(c);
+      expect(text).toMatch(/^\d{1,3}(?: \d{3})*,\d{2} DA$/);
+    }
+  });
+
+  it("round-trips through the input parser", () => {
+    for (const c of [0, 1, 99, 100, 123_456, 100_000_000_000]) {
+      expect(parseAmount(formatAmount(c))).toBe(c);
+    }
+  });
+
+  it("rejects negative amounts", () => {
+    expect(() => formatDA(-1)).toThrow(RangeError);
   });
 });
