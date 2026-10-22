@@ -55,10 +55,10 @@ export function buildPdfModel(doc: InvoiceDocument, currentSeller: SellerSnapsho
         name: c.name,
         lines: [c.address, [c.phone && `Tél. ${c.phone}`, c.email].filter(Boolean).join(" · ")].filter((l) => l.trim() !== ""),
         ids: nonEmpty([
-          ["NIF", c.nif],
-          ["NIS", c.nis],
-          ["RC", c.rc],
-          ["Art. imp.", c.articleImposition],
+          [fr.fiscalShort.nif, c.nif],
+          [fr.fiscalShort.nis, c.nis],
+          [fr.fiscalShort.rc, c.rc],
+          [fr.fiscalShort.articleImposition, c.articleImposition],
         ]),
       }
     : null;
@@ -84,10 +84,10 @@ export function buildPdfModel(doc: InvoiceDocument, currentSeller: SellerSnapsho
       name: seller.name,
       lines: sellerLines,
       ids: nonEmpty([
-        ["NIF", seller.nif],
-        ["NIS", seller.nis],
-        ["RC", seller.rc],
-        ["Art. imp.", seller.articleImposition],
+        [fr.fiscalShort.nif, seller.nif],
+        [fr.fiscalShort.nis, seller.nis],
+        [fr.fiscalShort.rc, seller.rc],
+        [fr.fiscalShort.articleImposition, seller.articleImposition],
         ["RIB", seller.rib],
         ["Banque", seller.bank],
       ]),

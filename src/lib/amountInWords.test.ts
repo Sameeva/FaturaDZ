@@ -58,6 +58,16 @@ describe("amountInWords", () => {
     [200_000_000, "deux millions de dinars algériens"],
     [150_000_000, "un million cinq cent mille dinars algériens"],
     [100_000_050, "un million de dinars algériens et cinquante centimes"],
+    [10_000_000_000, "cent millions de dinars algériens"],
+    [30_000_000_000, "trois cents millions de dinars algériens"],
+    [34_567_890_000, "trois cent quarante-cinq millions six cent soixante-dix-huit mille neuf cents dinars algériens"],
+    [99_999_999_900, "neuf cent quatre-vingt-dix-neuf millions neuf cent quatre-vingt-dix-neuf mille neuf cent quatre-vingt-dix-neuf dinars algériens"],
+    [80_000_000_00, "quatre-vingts millions de dinars algériens"],
+    [80_080_000_00, "quatre-vingts millions quatre-vingt mille dinars algériens"],
+    [100_000_000_000, "un milliard de dinars algériens"],
+    [200_000_000_000, "deux milliards de dinars algériens"],
+    [100_000_000_099, "un milliard de dinars algériens et quatre-vingt-dix-neuf centimes"],
+    [123_456_789_099, "un milliard deux cent trente-quatre millions cinq cent soixante-sept mille huit cent quatre-vingt-dix dinars algériens et quatre-vingt-dix-neuf centimes"],
   ])("%i centimes -> %s", (c, words) => {
     expect(amountInWords(c)).toBe(words);
   });
