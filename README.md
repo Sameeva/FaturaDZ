@@ -6,6 +6,8 @@ Invoice (facture) and receipt (reçu) maker for Algerian businesses. It prints t
 
 Everything runs locally in the browser: data is stored in IndexedDB on the user's device, nothing is sent to a server. Users should export a backup regularly (Paramètres → Sauvegarde).
 
+**Live demo:** https://fatura-dz.vercel.app
+
 ## Features
 
 - Invoices and receipts with sequential numbering per type and year
