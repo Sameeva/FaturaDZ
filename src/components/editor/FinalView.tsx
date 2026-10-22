@@ -9,7 +9,8 @@ import type { FinalDocument } from "@/db/schema";
 import { fr } from "@/i18n/fr";
 import { formatAmount, formatPercent, formatQuantity } from "@/lib/money";
 import { downloadDocumentPdf } from "@/pdf/download";
-import { formatDateFr } from "@/pdf/model";
+import { buildPdfModel, formatDateFr } from "@/pdf/model";
+import { InvoicePrint } from "@/components/invoice/InvoicePrint";
 import { TotalsPanel } from "./TotalsPanel";
 
 export function FinalView({ doc }: { doc: FinalDocument }) {
@@ -22,6 +23,8 @@ export function FinalView({ doc }: { doc: FinalDocument }) {
   } catch {
     totals = null;
   }
+
+  const printModel = totals ? buildPdfModel(doc, doc.seller) : null;
 
   async function onDownload() {
     try {
@@ -37,6 +40,7 @@ export function FinalView({ doc }: { doc: FinalDocument }) {
   }
 
   return (
+    <>
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">
@@ -44,6 +48,9 @@ export function FinalView({ doc }: { doc: FinalDocument }) {
         </h1>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onDuplicate}>{fr.doc.duplicate}</Button>
+          <Button onClick={() => window.print()} disabled={!totals}>
+            {fr.doc.print}
+          </Button>
           <Button variant="primary" onClick={onDownload}>
             {fr.doc.download}
           </Button>
@@ -103,5 +110,7 @@ export function FinalView({ doc }: { doc: FinalDocument }) {
 
       {totals && <TotalsPanel totals={totals} type={doc.type} />}
     </div>
+    {printModel && <InvoicePrint model={printModel} />}
+    </>
   );
 }

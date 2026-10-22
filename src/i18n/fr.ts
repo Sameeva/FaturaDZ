@@ -86,6 +86,7 @@ export const fr = {
     finalizeConfirm:
       "Finaliser ce document ? Un numéro définitif lui sera attribué et il ne pourra plus être modifié.",
     download: "Télécharger le PDF",
+    print: "Imprimer",
     duplicate: "Dupliquer",
     deleteDraft: "Supprimer le brouillon",
     locked: "Ce document est finalisé : il ne peut plus être modifié. Dupliquez-le pour faire une correction.",
