@@ -6,6 +6,7 @@ import { Button, Card, Checkbox, Notice, SelectField, TextArea, TextField } from
 import { useDbQuery } from "@/components/useDb";
 import { tvaOptions } from "@/components/BusinessForm";
 import { getDb } from "@/db";
+import { describeDbError } from "@/db/errors";
 import { deleteDraft, finalizeDocument, newId, saveDraft, sellerFromBusiness } from "@/db/repository";
 import type { Business, ClientSnapshot, DocumentLine, DraftDocument } from "@/db/schema";
 import { fr } from "@/i18n/fr";
@@ -88,7 +89,7 @@ export function DraftEditor({ initial, business }: { initial: DraftDocument; bus
           lastSavedJson.current = draftJson;
           setStatus({ tone: "info", text: fr.doc.draftSaved });
         })
-        .catch(() => setStatus({ tone: "danger", text: fr.errors.generic }));
+        .catch((e) => setStatus({ tone: "danger", text: describeDbError(e) }));
     }, AUTOSAVE_MS);
     return () => clearTimeout(timer);
   }, [draftJson]);
@@ -121,7 +122,7 @@ export function DraftEditor({ initial, business }: { initial: DraftDocument; bus
       // The page re-renders with the finalized view (live query).
     } catch (e) {
       finalizing.current = false;
-      setStatus({ tone: "danger", text: e instanceof Error ? e.message : fr.errors.generic });
+      setStatus({ tone: "danger", text: describeDbError(e) });
     } finally {
       setBusy(false);
     }
@@ -144,7 +145,7 @@ export function DraftEditor({ initial, business }: { initial: DraftDocument; bus
       router.push("/");
     } catch (e) {
       finalizing.current = false;
-      setStatus({ tone: "danger", text: e instanceof Error ? e.message : fr.errors.generic });
+      setStatus({ tone: "danger", text: describeDbError(e) });
     }
   }
 
