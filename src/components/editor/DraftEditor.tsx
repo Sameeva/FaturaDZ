@@ -13,7 +13,7 @@ import { fr } from "@/i18n/fr";
 import type { TvaRateBp } from "@/lib/fiscal-config";
 import { amountToInput } from "@/lib/money";
 import { computeTotals, type PaymentMethod, type Totals } from "@/lib/tax";
-import { checkArticleImposition, checkNif, checkNis } from "@/lib/validators";
+import { checkArticleImposition, checkNif, checkNis, checkRc } from "@/lib/validators";
 import { downloadDocumentPdf } from "@/pdf/download";
 import { parseEditorLine, toEditorLine, type EditorLine } from "./lines";
 import { TotalsPanel } from "./TotalsPanel";
@@ -192,7 +192,7 @@ export function DraftEditor({ initial, business }: { initial: DraftDocument; bus
               <>
                 {clientField("nif", fr.fields.nif, checkNif(client.nif))}
                 {clientField("nis", fr.fields.nis, checkNis(client.nis))}
-                {clientField("rc", fr.fields.rc)}
+                {clientField("rc", fr.fields.rc, checkRc(client.rc))}
                 {clientField("articleImposition", fr.fields.articleImposition, checkArticleImposition(client.articleImposition))}
               </>
             )}

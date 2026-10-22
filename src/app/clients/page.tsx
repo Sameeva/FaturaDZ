@@ -8,7 +8,7 @@ import { describeDbError } from "@/db/errors";
 import { newId, saveClient } from "@/db/repository";
 import type { Client } from "@/db/schema";
 import { fr } from "@/i18n/fr";
-import { checkArticleImposition, checkNif, checkNis } from "@/lib/validators";
+import { checkArticleImposition, checkNif, checkNis, checkRc } from "@/lib/validators";
 
 type EditableKey = "name" | "address" | "phone" | "email" | "nif" | "nis" | "rc" | "articleImposition";
 
@@ -53,7 +53,7 @@ function ClientForm({ initial, onDone }: { initial: Client; onDone: () => void }
         {field("email")}
         {field("nif", checkNif(form.nif))}
         {field("nis", checkNis(form.nis))}
-        {field("rc")}
+        {field("rc", checkRc(form.rc))}
         {field("articleImposition", checkArticleImposition(form.articleImposition))}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">

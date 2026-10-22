@@ -9,7 +9,7 @@ import { fr } from "@/i18n/fr";
 import { TVA_RATES_BP, type TvaRateBp } from "@/lib/fiscal-config";
 import { processLogo } from "@/lib/logo";
 import { amountToInput, parseAmount } from "@/lib/money";
-import { checkArticleImposition, checkNif, checkNis, checkRib } from "@/lib/validators";
+import { checkArticleImposition, checkNif, checkNis, checkRc, checkRib } from "@/lib/validators";
 import { Button, Card, Checkbox, Notice, SelectField, TextArea, TextField } from "./ui";
 
 type TextKey = "name" | "legalForm" | "activity" | "address" | "phone" | "email" | "nif" | "nis" | "rc" | "articleImposition" | "rib" | "bank";
@@ -89,7 +89,7 @@ export function BusinessForm({ initial }: { initial: Business | null }) {
         {textField("email", { inputMode: "email" })}
         {textField("nif", { warning: checkNif(form.nif), inputMode: "numeric" })}
         {textField("nis", { warning: checkNis(form.nis), inputMode: "numeric" })}
-        {textField("rc")}
+        {textField("rc", { warning: checkRc(form.rc) })}
         {textField("articleImposition", { warning: checkArticleImposition(form.articleImposition), inputMode: "numeric" })}
         {textField("rib", { warning: checkRib(form.rib), inputMode: "numeric" })}
         {textField("bank")}
