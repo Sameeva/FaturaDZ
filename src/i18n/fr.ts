@@ -105,6 +105,7 @@ export const fr = {
     all: "Tous",
     setupFirst: "Commencez par renseigner les informations de votre entreprise.",
     goSettings: "Aller aux paramètres",
+    exportCsv: "Exporter en CSV",
   },
   backup: {
     title: "Sauvegarde",
