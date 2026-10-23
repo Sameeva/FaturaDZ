@@ -94,7 +94,17 @@ describe("validateClientTaxProfile", () => {
   it("reports every missing field for an empty business", () => {
     const r = validateClientTaxProfile({ name: "X" }, "business");
     expect(r.ok).toBe(false);
-    expect(r.issues.map((i) => i.field).sort()).toEqual(["articleImposition", "commune", "nif", "nis", "rc", "wilaya"]);
+    expect(r.issues.map((i) => i.field).sort()).toEqual(["commune", "nif", "nis", "rc", "wilaya"]);
+  });
+
+  it("only warns when a business has no article d'imposition", () => {
+    const r = validateClientTaxProfile({ ...business, articleImposition: "" }, "business");
+    expect(r.ok).toBe(true);
+    expect(r.warnings.map((w) => w.field)).toEqual(["articleImposition"]);
+  });
+
+  it("still rejects a malformed article d'imposition", () => {
+    expect(validateClientTaxProfile({ ...business, articleImposition: "1!" }, "business").ok).toBe(false);
   });
 
   it("reports malformed identifiers", () => {
@@ -103,10 +113,17 @@ describe("validateClientTaxProfile", () => {
     expect(r.issues.map((i) => i.field).sort()).toEqual(["nif", "rc"]);
   });
 
-  it("lets an individual through with just a name, but still checks given ids", () => {
-    expect(validateClientTaxProfile({ name: "Ahmed" }, "individual").ok).toBe(true);
-    expect(validateClientTaxProfile({ name: "Ahmed", nif: "123" }, "individual").ok).toBe(false);
-    expect(validateClientTaxProfile({ name: "" }, "individual").ok).toBe(false);
+  it("requires an address for an individual", () => {
+    const r = validateClientTaxProfile({ name: "Ahmed" }, "individual");
+    expect(r.ok).toBe(false);
+    expect(r.issues.map((i) => i.field)).toEqual(["address"]);
+  });
+
+  it("lets an individual through with a name and address, but still checks given ids", () => {
+    const addr = "12 rue Didouche Mourad, Alger";
+    expect(validateClientTaxProfile({ name: "Ahmed", address: addr }, "individual").ok).toBe(true);
+    expect(validateClientTaxProfile({ name: "Ahmed", address: addr, nif: "123" }, "individual").ok).toBe(false);
+    expect(validateClientTaxProfile({ name: "", address: addr }, "individual").ok).toBe(false);
   });
 });
 
@@ -115,6 +132,11 @@ describe("checkClientForFinalization", () => {
 
   it("accepts a private customer with no identifier", () => {
     expect(checkClientForFinalization(ids)).toEqual({ errors: [], warnings: [] });
+  });
+
+  it("warns about a missing address, but not when the address is absent from the input", () => {
+    expect(checkClientForFinalization({ ...ids, address: " " }).warnings).toHaveLength(1);
+    expect(checkClientForFinalization({ ...ids, address: "Alger" }).warnings).toEqual([]);
   });
 
   it("blocks a NIF or NIS with non-digit characters", () => {
