@@ -162,3 +162,42 @@ export function validateClientTaxProfile(input: unknown, mode: "business" | "ind
   }
   return issues.length === 0 ? { ok: true, profile: p, issues: [] } : { ok: false, issues };
 }
+
+export type FinalizationCheck = { errors: string[]; warnings: string[] };
+
+/**
+ * Check run on the client of an invoice (not a receipt) at finalization.
+ *  - errors block: a NIF or NIS that is present but malformed.
+ *  - warnings never block: RC (older layouts such as "98 B 0123456" are legitimate),
+ *    Article d'imposition (length still TO VERIFY), and a client with some fiscal
+ *    identifiers but no NIF, which looks like a business missing its NIF.
+ * A client with no identifier at all is treated as a private customer.
+ */
+export function checkClientForFinalization(client: {
+  nif: string;
+  nis: string;
+  rc: string;
+  articleImposition: string;
+}): FinalizationCheck {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const filled = (v: string) => v.trim() !== "";
+
+  if (filled(client.nif)) {
+    const r = nifSchema.safeParse(client.nif);
+    if (!r.success) errors.push(r.error.issues[0].message);
+  }
+  if (filled(client.nis)) {
+    const r = nisSchema.safeParse(client.nis);
+    if (!r.success) errors.push(r.error.issues[0].message);
+  }
+  if (filled(client.rc) && !rcSchema.safeParse(client.rc).success) {
+    warnings.push("RC : format non reconnu (les anciens formats restent acceptés).");
+  }
+  if (filled(client.articleImposition) && !articleImpositionSchema.safeParse(client.articleImposition).success) {
+    warnings.push("Article d'imposition : format non reconnu.");
+  }
+  const anyId = [client.nis, client.rc, client.articleImposition].some(filled);
+  if (anyId && !filled(client.nif)) warnings.push("NIF du client manquant.");
+  return { errors, warnings };
+}

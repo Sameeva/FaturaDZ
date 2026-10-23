@@ -48,6 +48,16 @@ afterEach(async () => {
 });
 
 describe("finalizeDocument", () => {
+
+  it("refuses an invoice whose client NIF is malformed, but not an older RC", async () => {
+    await saveBusiness(db, business);
+    const bad = draftWith({ client: { ...draftWith().client, nif: "123" } });
+    await saveDraft(db, bad);
+    await expect(finalizeDocument(db, bad.id)).rejects.toThrow(/NIF/);
+    const oldRc = draftWith({ client: { ...draftWith().client, nif: "000016001234567", rc: "98 B 0123456" } });
+    await saveDraft(db, oldRc);
+    expect((await finalizeDocument(db, oldRc.id)).status).toBe("final");
+  });
   it("assigns sequential numbers per type and year", async () => {
     const a = await saveDraft(db, draftWith());
     const b = await saveDraft(db, draftWith());
