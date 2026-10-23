@@ -128,10 +128,10 @@ describe("checkClientForFinalization", () => {
     expect(r.warnings).toHaveLength(1);
   });
 
-  it("only warns on an older RC layout", () => {
+  it("accepts an older RC layout and warns on an implausible one", () => {
     const r = checkClientForFinalization({ ...ids, nif: "000016001234567", rc: "98 B 0123456" });
-    expect(r.errors).toEqual([]);
-    expect(r.warnings).toHaveLength(1);
+    expect(r).toEqual({ errors: [], warnings: [] });
+    expect(checkClientForFinalization({ ...ids, nif: "000016001234567", rc: "abc" }).warnings).toHaveLength(1);
   });
 
   it("warns when a business-looking client has no NIF", () => {
