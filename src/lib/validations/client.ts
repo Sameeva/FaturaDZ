@@ -17,9 +17,11 @@ import { ID_FORMATS } from "@/lib/fiscal-config";
 const compact = (value: string) => value.replace(/[\s./-]/g, "");
 
 /**
- * Wilaya code, "01".."69". Algeria had 58 wilayas; the territorial reform added
- * eleven (59 to 69) and left 01-58 unchanged, so existing records stay valid. Lower MAX_WILAYA_CODE to 58
- * if you only want the pre-reform list.
+ * Wilaya code, "01".."69". Algeria had 58 wilayas; law 26-06 of 4 April 2026 (JO n. 25)
+ * brought the country to 69 and left 01-58 unchanged, so existing records stay valid.
+ * Presidential decree 26-206 of 25 May 2026 (JO n. 40) names the eleven new ones; the
+ * mapping of codes 60-69 to names is still not checked against it. Lower MAX_WILAYA_CODE
+ * to 58 if you only want the pre-reform list.
  */
 export const MAX_WILAYA_CODE = 69;
 export const wilayaCodeSchema = z
@@ -30,7 +32,7 @@ export const wilayaCodeSchema = z
 
 export const communeSchema = z.string().trim().min(1, "Commune obligatoire.").max(80);
 
-/** NIF: 15 digits (20 for some legal entities / secondary establishments, see fiscal-config). */
+/** NIF: 15 digits; 20 for a secondary establishment (first 15 = main NIF), see fiscal-config. */
 export const nifSchema = z
   .string()
   .transform(compact)
@@ -135,16 +137,19 @@ export type ClientTaxProfile = z.infer<typeof clientTaxProfileSchema>;
 
 export type TaxProfileIssue = { field: keyof ClientTaxProfile; message: string };
 export type TaxProfileResult =
-  | { ok: true; profile: ClientTaxProfile; issues: [] }
-  | { ok: false; issues: TaxProfileIssue[] };
+  | { ok: true; profile: ClientTaxProfile; issues: []; warnings: TaxProfileIssue[] }
+  | { ok: false; issues: TaxProfileIssue[]; warnings: TaxProfileIssue[] };
 
 /**
  * Validate a client before invoice generation.
- *  - "business": a professional client. Name, wilaya, commune and all four fiscal
- *    identifiers are required and must be well-formed.
- *  - "individual": a private customer. Only the name is required; fiscal
- *    identifiers are checked for format when present.
- * On success `profile` holds the normalized values (RC reformatted, separators
+ *  - "business": a professional client. Name, wilaya, commune, NIF, NIS and RC are
+ *    required and must be well-formed. The article d'imposition is checked when
+ *    present but only produces a warning when missing: the commercial-invoice
+ *    decree (05-468) does not list it among the buyer's mandatory mentions.
+ *  - "individual": a private customer. Name and address are required (decree
+ *    05-468 asks for nom, prenom and address); fiscal identifiers are checked for
+ *    format when present.
+ * `warnings` never block. On success `profile` holds the normalized values (RC reformatted, separators
  * removed from NIF/NIS/AI).
  */
 export function validateClientTaxProfile(input: unknown, mode: "business" | "individual"): TaxProfileResult {
@@ -154,9 +159,10 @@ export function validateClientTaxProfile(input: unknown, mode: "business" | "ind
     for (const i of parsed.error.issues) {
       issues.push({ field: (i.path[0] ?? "name") as keyof ClientTaxProfile, message: i.message });
     }
-    return { ok: false, issues };
+    return { ok: false, issues, warnings: [] };
   }
   const p = parsed.data;
+  const warnings: TaxProfileIssue[] = [];
   if (p.name === "") issues.push({ field: "name", message: "Nom du client obligatoire." });
 
   if (mode === "business") {
@@ -166,13 +172,17 @@ export function validateClientTaxProfile(input: unknown, mode: "business" | "ind
       ["nif", "NIF obligatoire."],
       ["nis", "NIS obligatoire."],
       ["rc", "RC obligatoire."],
-      ["articleImposition", "Article d'imposition obligatoire."],
     ];
     for (const [field, message] of required) {
       if (p[field] === "") issues.push({ field, message });
     }
+    if (p.articleImposition === "") {
+      warnings.push({ field: "articleImposition", message: "Article d'imposition non renseigné." });
+    }
+  } else if (p.address === "") {
+    issues.push({ field: "address", message: "Adresse du client obligatoire." });
   }
-  return issues.length === 0 ? { ok: true, profile: p, issues: [] } : { ok: false, issues };
+  return issues.length === 0 ? { ok: true, profile: p, issues: [], warnings } : { ok: false, issues, warnings };
 }
 
 export type FinalizationCheck = { errors: string[]; warnings: string[] };
@@ -184,9 +194,11 @@ export type FinalizationCheck = { errors: string[]; warnings: string[] };
  *    fiscal-config.ts): a NIF/NIS of unexpected length, an RC (older layouts such
  *    as "98 B 0123456" are legitimate), an Article d'imposition, and a client with
  *    some fiscal identifiers but no NIF, which looks like a business missing its NIF.
+ * The client's address is a mandatory mention (decree 05-468), so a missing one warns too.
  * A client with no identifier at all is treated as a private customer.
  */
 export function checkClientForFinalization(client: {
+  address?: string;
   nif: string;
   nis: string;
   rc: string;
@@ -215,5 +227,8 @@ export function checkClientForFinalization(client: {
   }
   const anyId = [client.nis, client.rc, client.articleImposition].some(filled);
   if (anyId && !filled(client.nif)) warnings.push("NIF du client manquant.");
+  if (client.address !== undefined && !filled(client.address)) {
+    warnings.push("Adresse du client manquante (mention obligatoire sur la facture).");
+  }
   return { errors, warnings };
 }
