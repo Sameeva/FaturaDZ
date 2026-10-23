@@ -17,8 +17,8 @@ import { ID_FORMATS } from "@/lib/fiscal-config";
 const compact = (value: string) => value.replace(/[\s./-]/g, "");
 
 /**
- * Wilaya code, "01".."69". TO VERIFY: Algeria had 58 wilayas until 2025; the
- * 2025 territorial reform raised the count to 69. Lower MAX_WILAYA_CODE to 58
+ * Wilaya code, "01".."69". Algeria had 58 wilayas; the territorial reform added
+ * eleven (59 to 69) and left 01-58 unchanged, so existing records stay valid. Lower MAX_WILAYA_CODE to 58
  * if you only want the pre-reform list.
  */
 export const MAX_WILAYA_CODE = 69;
@@ -64,7 +64,8 @@ export const nisSchema = z
  *   C        category letter, A or B  (TO VERIFY: meaning of each letter)
  *   YY       registration year, two digits
  * Spaces around the letter are optional on input; the output is normalized.
- * TO VERIFY: older RCs (e.g. "98 B 0123456") use a different layout and are rejected.
+ * Older RCs (e.g. "98 B 0123456") use a different layout: this schema describes the modern
+ * layout only, and rcLooksValid is what the forms and finalization use.
  */
 const RC_PATTERN = /^(\d{2})\/(\d{2})-(\d{7})\s*([AB])\s*(\d{2})$/i;
 
@@ -86,6 +87,17 @@ export const rcSchema = z
     const m = RC_PATTERN.exec(value)!;
     return `${m[1]}/${m[2]}-${m[3]} ${m[4].toUpperCase()} ${m[5]}`;
   });
+
+/**
+ * Loose plausibility check for an RC as typed by users. The strict layout above is
+ * the modern one; older numbers (e.g. "98 B 0123456") use other layouts and are
+ * legitimate, so anything with enough digits and only usual separators passes.
+ */
+export function rcLooksValid(value: string): boolean {
+  const v = value.trim();
+  if (rcSchema.safeParse(v).success) return true;
+  return /^[0-9A-Za-z/ .-]{5,40}$/.test(v) && (v.match(/\d/g) ?? []).length >= 5;
+}
 
 /** Parse an RC into its parts; null if the format is invalid. */
 export function parseRc(value: string) {

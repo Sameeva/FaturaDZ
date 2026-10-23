@@ -7,6 +7,11 @@ describe("checkRc", () => {
     expect(checkRc("16/00-1234567 B 18")).toBeNull();
   });
 
+  it("accepts older RC layouts", () => {
+    expect(checkRc("98 B 0123456")).toBeNull();
+    expect(checkRc("16/00-1234567 B 18")).toBeNull();
+  });
+
   it("returns a French hint for a malformed RC", () => {
     expect(checkRc("123")).toMatch(/^RC :/);
   });
