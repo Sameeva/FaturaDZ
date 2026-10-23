@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   articleImpositionSchema,
+  checkClientForFinalization,
   nifSchema,
   nisSchema,
   parseRc,
@@ -106,5 +107,36 @@ describe("validateClientTaxProfile", () => {
     expect(validateClientTaxProfile({ name: "Ahmed" }, "individual").ok).toBe(true);
     expect(validateClientTaxProfile({ name: "Ahmed", nif: "123" }, "individual").ok).toBe(false);
     expect(validateClientTaxProfile({ name: "" }, "individual").ok).toBe(false);
+  });
+});
+
+describe("checkClientForFinalization", () => {
+  const ids = { nif: "", nis: "", rc: "", articleImposition: "" };
+
+  it("accepts a private customer with no identifier", () => {
+    expect(checkClientForFinalization(ids)).toEqual({ errors: [], warnings: [] });
+  });
+
+  it("blocks a NIF or NIS with non-digit characters", () => {
+    expect(checkClientForFinalization({ ...ids, nif: "00001600123456X" }).errors).toHaveLength(1);
+    expect(checkClientForFinalization({ ...ids, nif: "000016001234567", nis: "12ab" }).errors).toHaveLength(1);
+  });
+
+  it("only warns on a NIF of unexpected length", () => {
+    const r = checkClientForFinalization({ ...ids, nif: "123" });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toHaveLength(1);
+  });
+
+  it("only warns on an older RC layout", () => {
+    const r = checkClientForFinalization({ ...ids, nif: "000016001234567", rc: "98 B 0123456" });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toHaveLength(1);
+  });
+
+  it("warns when a business-looking client has no NIF", () => {
+    const r = checkClientForFinalization({ ...ids, rc: "16/00-1234567 B 18" });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toContain("NIF du client manquant.");
   });
 });
