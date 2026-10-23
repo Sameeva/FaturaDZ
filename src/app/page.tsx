@@ -7,8 +7,10 @@ import { Button, Notice, SelectField, TextField } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 import { getDb } from "@/db";
 import { documentTotals, newDraft, saveDraft } from "@/db/repository";
-import type { InvoiceDocument } from "@/db/schema";
+import type { FinalDocument, InvoiceDocument } from "@/db/schema";
 import { fr } from "@/i18n/fr";
+import { documentsToCsv } from "@/lib/csv";
+import { downloadBlob } from "@/lib/download";
 import { formatDA } from "@/lib/money";
 import type { DocumentType } from "@/lib/numbering";
 import { formatDateFr } from "@/pdf/model";
@@ -53,6 +55,10 @@ export default function DashboardPage() {
     return !q || d.client.name.toLowerCase().includes(q) || (d.number ?? "").toLowerCase().includes(q);
   });
 
+  const finals = visible.filter((d): d is FinalDocument => d.status === "final");
+  const exportCsv = () =>
+    downloadBlob(new Blob([documentsToCsv(finals)], { type: "text/csv;charset=utf-8" }), `documents-${new Date().toISOString().slice(0, 10)}.csv`);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -62,6 +68,9 @@ export default function DashboardPage() {
             {fr.doc.newFacture}
           </Button>
           <Button onClick={() => create("recu")}>{fr.doc.newRecu}</Button>
+          <Button onClick={exportCsv} disabled={finals.length === 0}>
+            {fr.dashboard.exportCsv}
+          </Button>
         </div>
       </div>
 
