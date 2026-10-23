@@ -8,6 +8,14 @@ Everything runs locally in the browser: data is stored in IndexedDB on the user'
 
 **Live demo:** https://fatura-dz.vercel.app
 
+## Screenshots
+
+Demo data, not real companies.
+
+| Documents | Finalized invoice | Invoice editor |
+| --- | --- | --- |
+| ![Documents list](docs/screenshots/dashboard.png) | ![Finalized invoice](docs/screenshots/invoice.png) | ![Invoice editor](docs/screenshots/editor.png) |
+
 ## Features
 
 - Invoices and receipts with sequential numbering per type and year
