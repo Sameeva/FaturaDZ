@@ -207,7 +207,7 @@ export function checkClientForFinalization(client: {
       if (!r.success) warnings.push(r.error.issues[0].message);
     }
   }
-  if (filled(client.rc) && !rcSchema.safeParse(client.rc).success) {
+  if (filled(client.rc) && !rcLooksValid(client.rc)) {
     warnings.push("RC : format non reconnu (les anciens formats restent acceptés).");
   }
   if (filled(client.articleImposition) && !articleImpositionSchema.safeParse(client.articleImposition).success) {
