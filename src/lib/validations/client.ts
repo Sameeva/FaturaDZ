@@ -167,10 +167,11 @@ export type FinalizationCheck = { errors: string[]; warnings: string[] };
 
 /**
  * Check run on the client of an invoice (not a receipt) at finalization.
- *  - errors block: a NIF or NIS that is present but malformed.
- *  - warnings never block: RC (older layouts such as "98 B 0123456" are legitimate),
- *    Article d'imposition (length still TO VERIFY), and a client with some fiscal
- *    identifiers but no NIF, which looks like a business missing its NIF.
+ *  - errors block: a NIF or NIS containing something other than digits.
+ *  - warnings never block, because the formats are still TO VERIFY (see
+ *    fiscal-config.ts): a NIF/NIS of unexpected length, an RC (older layouts such
+ *    as "98 B 0123456" are legitimate), an Article d'imposition, and a client with
+ *    some fiscal identifiers but no NIF, which looks like a business missing its NIF.
  * A client with no identifier at all is treated as a private customer.
  */
 export function checkClientForFinalization(client: {
@@ -183,13 +184,16 @@ export function checkClientForFinalization(client: {
   const warnings: string[] = [];
   const filled = (v: string) => v.trim() !== "";
 
-  if (filled(client.nif)) {
-    const r = nifSchema.safeParse(client.nif);
-    if (!r.success) errors.push(r.error.issues[0].message);
-  }
-  if (filled(client.nis)) {
-    const r = nisSchema.safeParse(client.nis);
-    if (!r.success) errors.push(r.error.issues[0].message);
+  for (const [value, schema, label] of [
+    [client.nif, nifSchema, "NIF"],
+    [client.nis, nisSchema, "NIS"],
+  ] as const) {
+    if (!filled(value)) continue;
+    if (!/^\d+$/.test(compact(value))) errors.push(`${label} : chiffres uniquement.`);
+    else {
+      const r = schema.safeParse(value);
+      if (!r.success) warnings.push(r.error.issues[0].message);
+    }
   }
   if (filled(client.rc) && !rcSchema.safeParse(client.rc).success) {
     warnings.push("RC : format non reconnu (les anciens formats restent acceptés).");

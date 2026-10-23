@@ -49,9 +49,9 @@ afterEach(async () => {
 
 describe("finalizeDocument", () => {
 
-  it("refuses an invoice whose client NIF is malformed, but not an older RC", async () => {
+  it("refuses an invoice whose client NIF has letters, but not an older RC", async () => {
     await saveBusiness(db, business);
-    const bad = draftWith({ client: { ...draftWith().client, nif: "123" } });
+    const bad = draftWith({ client: { ...draftWith().client, nif: "00001600123456X" } });
     await saveDraft(db, bad);
     await expect(finalizeDocument(db, bad.id)).rejects.toThrow(/NIF/);
     const oldRc = draftWith({ client: { ...draftWith().client, nif: "000016001234567", rc: "98 B 0123456" } });

@@ -117,9 +117,15 @@ describe("checkClientForFinalization", () => {
     expect(checkClientForFinalization(ids)).toEqual({ errors: [], warnings: [] });
   });
 
-  it("blocks a malformed NIF or NIS", () => {
-    expect(checkClientForFinalization({ ...ids, nif: "123" }).errors).toHaveLength(1);
+  it("blocks a NIF or NIS with non-digit characters", () => {
+    expect(checkClientForFinalization({ ...ids, nif: "00001600123456X" }).errors).toHaveLength(1);
     expect(checkClientForFinalization({ ...ids, nif: "000016001234567", nis: "12ab" }).errors).toHaveLength(1);
+  });
+
+  it("only warns on a NIF of unexpected length", () => {
+    const r = checkClientForFinalization({ ...ids, nif: "123" });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toHaveLength(1);
   });
 
   it("only warns on an older RC layout", () => {
