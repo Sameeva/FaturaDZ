@@ -47,3 +47,15 @@ describe("computeTimbre (art. 100 Code du timbre, LF 2025)", () => {
     );
   });
 });
+
+describe("computeTimbre worked cases (LF 2025 scale)", () => {
+  it.each([
+    ["just above the exemption: minimum 5 DA", 300_01, 5_00],
+    ["just above 30 000 DA: 301 tranches at 1,50 DA", 30_000_01, 451_50],
+    ["just above 100 000 DA: 1 001 tranches at 2 DA", 100_000_01, 2_002_00],
+    ["no maximum on very large amounts", 5_000_000_00, 100_000_00],
+  ])("%s", (_label, amount, expected) => {
+    expect(computeTimbre(amount)).toBe(expected);
+  });
+});
+

@@ -21,8 +21,13 @@ export type TvaRateBp = (typeof TVA_RATES_BP)[number];
 
 /**
  * Droit de timbre on documents paid in cash (espèces).
- * Source: Code du timbre, art. 100, as amended by the Loi de finances 2025
- * (circular n° 14/MF/DGI/LF.2025 as cited by secondary sources).
+ * Source: Code du timbre, art. 100-I, as amended by the Loi de finances 2025
+ * (arts. 46-47, JO n° 84 of 26 December 2024). Payments by electronic means are
+ * exempt (art. 258 quinquies, created by art. 47 LF 2025).
+ *
+ * One duty per payment, whatever the document: a facture and a reçu for a price
+ * paid in cash use the same scale, and the flat 50 DA quittance duty of
+ * art. 100-II is never added on top.
  *
  * CONFIRMED (consistent across sources):
  *   - applies only when payment is made in cash;
@@ -58,8 +63,8 @@ export const TIMBRE = {
  * Legal identifier formats. These are used for WARNINGS only, never to block,
  * because formats vary (main vs secondary establishment, old documents).
  *
- * - NIF: 15 digits, 20 digits for some legal entities / secondary
- *   establishments (sources disagree on the exact criterion). TO VERIFY.
+ * - NIF: 15 digits; 20 digits for a secondary establishment (the first 15
+ *   digits are the main NIF). No official text found; kept as a warning.
  * - NIS: 15 digits; 18 for a secondary establishment (15 + 3 sequential digits).
  * - Article d'imposition: digits only; commonly 11 digits but no source
  *   confirmed the length, so only "digits only" is checked. TO VERIFY.
