@@ -1,4 +1,4 @@
-import { rcSchema } from "./validations/client";
+import { rcLooksValid, rcSchema } from "./validations/client";
 import { fr } from "@/i18n/fr";
 import { ID_FORMATS } from "./fiscal-config";
 
@@ -29,9 +29,10 @@ export function checkArticleImposition(value: string): string | null {
   return /^\d+$/.test(v) ? null : `${fr.fields.articleImposition} : chiffres uniquement.`;
 }
 
-/** Non-blocking RC format hint, using the strict schema from validations/client.ts. */
+/** Non-blocking RC hint. Older RC layouts are accepted; only clearly implausible values are flagged. */
 export function checkRc(value: string): string | null {
   if (value.trim() === "") return null;
+  if (rcLooksValid(value)) return null;
   const result = rcSchema.safeParse(value);
   return result.success ? null : result.error.issues[0].message;
 }
