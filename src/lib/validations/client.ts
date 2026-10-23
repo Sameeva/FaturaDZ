@@ -162,3 +162,46 @@ export function validateClientTaxProfile(input: unknown, mode: "business" | "ind
   }
   return issues.length === 0 ? { ok: true, profile: p, issues: [] } : { ok: false, issues };
 }
+
+export type FinalizationCheck = { errors: string[]; warnings: string[] };
+
+/**
+ * Check run on the client of an invoice (not a receipt) at finalization.
+ *  - errors block: a NIF or NIS containing something other than digits.
+ *  - warnings never block, because the formats are still TO VERIFY (see
+ *    fiscal-config.ts): a NIF/NIS of unexpected length, an RC (older layouts such
+ *    as "98 B 0123456" are legitimate), an Article d'imposition, and a client with
+ *    some fiscal identifiers but no NIF, which looks like a business missing its NIF.
+ * A client with no identifier at all is treated as a private customer.
+ */
+export function checkClientForFinalization(client: {
+  nif: string;
+  nis: string;
+  rc: string;
+  articleImposition: string;
+}): FinalizationCheck {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const filled = (v: string) => v.trim() !== "";
+
+  for (const [value, schema, label] of [
+    [client.nif, nifSchema, "NIF"],
+    [client.nis, nisSchema, "NIS"],
+  ] as const) {
+    if (!filled(value)) continue;
+    if (!/^\d+$/.test(compact(value))) errors.push(`${label} : chiffres uniquement.`);
+    else {
+      const r = schema.safeParse(value);
+      if (!r.success) warnings.push(r.error.issues[0].message);
+    }
+  }
+  if (filled(client.rc) && !rcSchema.safeParse(client.rc).success) {
+    warnings.push("RC : format non reconnu (les anciens formats restent acceptés).");
+  }
+  if (filled(client.articleImposition) && !articleImpositionSchema.safeParse(client.articleImposition).success) {
+    warnings.push("Article d'imposition : format non reconnu.");
+  }
+  const anyId = [client.nis, client.rc, client.articleImposition].some(filled);
+  if (anyId && !filled(client.nif)) warnings.push("NIF du client manquant.");
+  return { errors, warnings };
+}

@@ -15,6 +15,7 @@ import { amountToInput } from "@/lib/money";
 import { computeTotals, type PaymentMethod, type Totals } from "@/lib/tax";
 import { checkArticleImposition, checkNif, checkNis, checkRc } from "@/lib/validators";
 import { downloadDocumentPdf } from "@/pdf/download";
+import { checkClientForFinalization } from "@/lib/validations/client";
 import { parseEditorLine, toEditorLine, type EditorLine } from "./lines";
 import { TotalsPanel } from "./TotalsPanel";
 
@@ -113,7 +114,9 @@ export function DraftEditor({ initial, business }: { initial: DraftDocument; bus
 
   async function onFinalize() {
     if (!draft) return;
-    if (!window.confirm(fr.doc.finalizeConfirm)) return;
+    const warnings = draft.type === "facture" ? checkClientForFinalization(draft.client).warnings : [];
+    const message = warnings.length > 0 ? `${warnings.join("\n")}\n\n${fr.doc.finalizeConfirm}` : fr.doc.finalizeConfirm;
+    if (!window.confirm(message)) return;
     setBusy(true);
     finalizing.current = true;
     try {

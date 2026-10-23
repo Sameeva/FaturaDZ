@@ -1,5 +1,6 @@
 import { computeTotals, type Totals } from "@/lib/tax";
 import { counterKey, formatDocumentNumber, yearOfIsoDate, type DocumentType } from "@/lib/numbering";
+import { checkClientForFinalization } from "@/lib/validations/client";
 import type { FaturaDb } from "./index";
 import {
   businessSchema,
@@ -130,6 +131,10 @@ export async function finalizeDocument(db: FaturaDb, id: string): Promise<FinalD
     }
     if (doc.type === "facture" && doc.client.name.trim() === "") {
       throw new Error("Le nom du client est obligatoire sur une facture.");
+    }
+    if (doc.type === "facture") {
+      const { errors } = checkClientForFinalization(doc.client);
+      if (errors.length > 0) throw new Error(errors[0]);
     }
 
     const business = await db.settings.get("business");
