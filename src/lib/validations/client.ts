@@ -19,9 +19,10 @@ const compact = (value: string) => value.replace(/[\s./-]/g, "");
 /**
  * Wilaya code, "01".."69". Algeria had 58 wilayas; law 26-06 of 4 April 2026 (JO n. 25)
  * brought the country to 69 and left 01-58 unchanged, so existing records stay valid.
- * Presidential decree 26-206 of 25 May 2026 (JO n. 40) names the eleven new ones; the
- * mapping of codes 60-69 to names is still not checked against it. Lower MAX_WILAYA_CODE
- * to 58 if you only want the pre-reform list.
+ * Presidential decree 26-206 of 25 May 2026 (JO n. 40) numbers the eleven new ones 59 Aflou,
+ * 60 Barika, 61 El Kantara, 62 Bir El Ater, 63 El Aricha, 64 Ksar Chellala, 65 Aïn Ouessara,
+ * 66 Messaad, 67 Ksar El Boukhari, 68 Bou Saâda, 69 El Abiodh Sidi Cheikh. Lower
+ * MAX_WILAYA_CODE to 58 if you only want the pre-reform list.
  */
 export const MAX_WILAYA_CODE = 69;
 export const wilayaCodeSchema = z
