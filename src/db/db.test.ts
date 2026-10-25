@@ -181,6 +181,27 @@ describe("backup", () => {
     await expect(db.documents.delete(final.id)).rejects.toThrow();
   });
 
+  it("never reissues a number already used after the backup was made", async () => {
+    await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    const backup = await exportBackup(db);
+    const second = await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    await restoreBackup(db, backup);
+    const next = await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    expect(next.number).not.toBe(second.number);
+    expect(next.number).toMatch(/-0003$/);
+  });
+
+  it("rejects a final document whose number does not match its type or year", async () => {
+    await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    const backup = await exportBackup(db);
+    for (const number of ["RE-2026-0001", "FA-1999-0001", "nimportequoi"]) {
+      const bad = structuredClone(backup);
+      bad.documents[0].number = number;
+      const r = parseBackup(JSON.stringify(bad));
+      expect(r.ok, number).toBe(false);
+    }
+  });
+
   it("rejects documents whose totals would overflow", async () => {
     const backup = await exportBackup(db);
     backup.documents.push({ ...draftWith(), lines: [{ ...draftWith().lines[0], quantityMilli: 1_000_000_000, unitPriceCentimes: 10_000_000_000_000 }] });
