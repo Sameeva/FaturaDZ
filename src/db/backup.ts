@@ -1,4 +1,4 @@
-import { counterKey, type DocumentType } from "@/lib/numbering";
+import { counterKey, yearOfIsoDate, type DocumentType } from "@/lib/numbering";
 import type { FaturaDb } from "./index";
 import { documentTotals } from "./repository";
 import { BACKUP_FORMAT, BACKUP_VERSION, backupSchema, type Backup, type Counter } from "./schema";
@@ -51,6 +51,15 @@ export function parseBackup(text: string): ParseResult {
   ] as const) {
     if (new Set(ids).size !== ids.length) return { ok: false, error: `Identifiants en double (${label}).` };
   }
+  // A final number must look like what finalizing produces: right prefix for the type, year of the
+  // issue date. Otherwise the counters can never protect it from being issued again.
+  for (const doc of backup.documents) {
+    if (doc.status !== "final") continue;
+    const match = NUMBER_RE.exec(doc.number);
+    if (!match || TYPE_BY_PREFIX[match[1]] !== doc.type || Number(match[2]) !== yearOfIsoDate(doc.issueDate)) {
+      return { ok: false, error: "Sauvegarde invalide (numéro de document incohérent)." };
+    }
+  }
   const numbers = backup.documents.flatMap((d) => (d.status === "final" ? [d.number] : []));
   if (new Set(numbers).size !== numbers.length) return { ok: false, error: "Numéros de documents en double." };
 
@@ -67,11 +76,13 @@ export function parseBackup(text: string): ParseResult {
 }
 
 /**
- * Counters never go below the highest number already used, so a restored
- * backup with stale counters can't make the app reissue an existing number.
+ * Counters never go below the highest number already used, so a restored backup with stale counters
+ * can't make the app reissue an existing number. `local` is what this device had before the restore:
+ * numbers issued after the backup was exported were already sent to clients, so they stay used.
  */
-export function reconcileCounters(backup: Backup): Counter[] {
+export function reconcileCounters(backup: Backup, local: readonly Counter[] = []): Counter[] {
   const last = new Map(backup.counters.map((c) => [c.key, c.last]));
+  for (const c of local) last.set(c.key, Math.max(last.get(c.key) ?? 0, c.last));
   for (const doc of backup.documents) {
     if (doc.status !== "final") continue;
     const match = NUMBER_RE.exec(doc.number);
@@ -84,7 +95,7 @@ export function reconcileCounters(backup: Backup): Counter[] {
 
 /** Replaces all local data with the backup, atomically. */
 export async function restoreBackup(db: FaturaDb, backup: Backup): Promise<void> {
-  const counters = reconcileCounters(backup);
+  const counters = reconcileCounters(backup, await db.counters.toArray());
   await db.replaceAll(async () => {
     if (backup.business) await db.settings.add(backup.business);
     await db.clients.bulkAdd(backup.clients);
