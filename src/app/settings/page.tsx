@@ -2,6 +2,7 @@
 
 import { BackupPanel } from "@/components/BackupPanel";
 import { BusinessForm } from "@/components/BusinessForm";
+import { PageHeader } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 import { getBusiness } from "@/db/repository";
 import { fr } from "@/i18n/fr";
@@ -12,7 +13,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold">{fr.nav.settings}</h1>
+      <PageHeader title={fr.nav.settings} />
       {/* Initial value only: a backup restore reloads the page. */}
       {business !== undefined && <BusinessForm initial={business} />}
       <BackupPanel />

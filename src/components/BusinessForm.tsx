@@ -9,6 +9,7 @@ import { fr } from "@/i18n/fr";
 import { TVA_RATES_BP, type TvaRateBp } from "@/lib/fiscal-config";
 import { processLogo } from "@/lib/logo";
 import { amountToInput, parseAmount } from "@/lib/money";
+import { requestPersistentStorage } from "@/lib/persistStorage";
 import { checkArticleImposition, checkNif, checkNis, checkRc, checkRib } from "@/lib/validators";
 import { Button, Card, Checkbox, Notice, SelectField, TextArea, TextField } from "./ui";
 
@@ -71,6 +72,7 @@ export function BusinessForm({ initial }: { initial: Business | null }) {
     };
     try {
       await saveBusiness(getDb(), business);
+      void requestPersistentStorage();
       setMessage({ tone: "success", text: fr.common.saved });
     } catch (e) {
       setMessage({ tone: "danger", text: describeDbError(e) });
@@ -111,9 +113,9 @@ export function BusinessForm({ initial }: { initial: Business | null }) {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <label className="text-sm">
-          <span className="me-2 text-xs font-medium text-muted">{fr.fields.logo}</span>
-          <input type="file" accept="image/png,image/jpeg" onChange={onLogo} className="text-sm" />
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-semibold">{fr.fields.logo}</span>
+          <input type="file" accept="image/png,image/jpeg" onChange={onLogo} className="text-base file:me-3 file:min-h-11 file:rounded-xl file:border file:border-border-strong file:bg-surface file:px-4 file:font-semibold" />
         </label>
         {form.logo && (
           <>

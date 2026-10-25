@@ -1,16 +1,29 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { getDb } from "@/db";
 import { describeDbError } from "@/db/errors";
 import { exportBackup, MAX_BACKUP_BYTES, parseBackup, restoreBackup } from "@/db/backup";
+import type { Backup } from "@/db/schema";
 import { todayIso } from "@/db/repository";
 import { fr } from "@/i18n/fr";
 import { downloadBlob } from "@/lib/download";
+import { ConfirmSheet } from "./ConfirmSheet";
 import { Button, Card, Notice } from "./ui";
+
+const RESTORED_KEY = "faturadz:restored";
 
 export function BackupPanel() {
   const [message, setMessage] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const [pending, setPending] = useState<Backup | null>(null);
+
+  // A restore reloads the page; the confirmation survives the reload through sessionStorage.
+  useEffect(() => {
+    if (sessionStorage.getItem(RESTORED_KEY)) {
+      sessionStorage.removeItem(RESTORED_KEY);
+      queueMicrotask(() => setMessage({ tone: "success", text: fr.backup.imported }));
+    }
+  }, []);
 
   async function onExport() {
     try {
@@ -42,10 +55,16 @@ export function BackupPanel() {
       setMessage({ tone: "danger", text: result.error });
       return;
     }
-    if (!window.confirm(fr.backup.importConfirm)) return;
+    setPending(result.backup);
+  }
+
+  async function doRestore() {
+    const backup = pending;
+    setPending(null);
+    if (!backup) return;
     try {
-      await restoreBackup(getDb(), result.backup);
-      window.alert(fr.backup.imported);
+      await restoreBackup(getDb(), backup);
+      sessionStorage.setItem(RESTORED_KEY, "1");
       window.location.reload();
     } catch (e) {
       // The restore is one transaction: on failure the previous data is untouched.
@@ -61,13 +80,23 @@ export function BackupPanel() {
           <Button variant="primary" onClick={onExport}>
             {fr.backup.export}
           </Button>
-          <label className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">
+          <label className="press inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-border-strong bg-surface px-4 text-[0.9375rem] font-semibold active:bg-sunk">
             {fr.backup.import}
             <input type="file" accept="application/json,.json" className="sr-only" onChange={onImport} />
           </label>
         </div>
         {message && <Notice tone={message.tone}>{message.text}</Notice>}
       </div>
+      <ConfirmSheet
+        open={pending !== null}
+        title={fr.backup.import}
+        confirmLabel="Restaurer"
+        tone="danger"
+        onConfirm={doRestore}
+        onCancel={() => setPending(null)}
+      >
+        <p>{fr.backup.importConfirm}</p>
+      </ConfirmSheet>
     </Card>
   );
 }

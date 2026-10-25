@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { tvaOptions } from "@/components/BusinessForm";
-import { Button, Card, Notice, SelectField, TextField } from "@/components/ui";
+import { ConfirmSheet } from "@/components/ConfirmSheet";
+import { Icon } from "@/components/icons";
+import { Sheet } from "@/components/Sheet";
+import { Button, EmptyState, IconButton, Notice, PageHeader, SearchField, SelectField, Skeleton, TextField } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 import { getDb } from "@/db";
 import { describeDbError } from "@/db/errors";
@@ -41,7 +44,7 @@ function ProductForm({ initial, defaultRate, onDone }: { initial: Product | null
   }
 
   return (
-    <Card title={initial ? initial.designation : "Nouveau produit"}>
+    <div>
       <div className="grid gap-3 sm:grid-cols-4">
         <div className="sm:col-span-2">
           <TextField label={fr.fields.designation} value={designation} onChange={setDesignation} error={designationError} required />
@@ -62,53 +65,81 @@ function ProductForm({ initial, defaultRate, onDone }: { initial: Product | null
         <Button onClick={onDone}>{fr.common.cancel}</Button>
       </div>
       {error && <div className="mt-3"><Notice tone="danger">{error}</Notice></div>}
-    </Card>
+    </div>
   );
 }
 
 export default function ProductsPage() {
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<{ key: string; product: Product | null } | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Product | null>(null);
   const products = useDbQuery((db) => db.products.orderBy("designation").toArray());
   const business = useDbQuery((db) => db.settings.get("business"));
   const defaultRate: TvaRateBp = business ? (business.tvaLiable ? business.defaultTvaRateBp : 0) : 1900;
 
   const q = query.trim().toLowerCase();
   const visible = (products ?? []).filter((p) => !q || p.designation.toLowerCase().includes(q));
-
-  async function onDelete(p: Product) {
-    if (window.confirm(fr.common.confirmDelete)) await getDb().products.delete(p.id);
-  }
+  const openForm = (product: Product | null) => {
+    setEditing({ key: product?.id ?? newId(), product });
+    setFormOpen(true);
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{fr.nav.products}</h1>
-        <Button variant="primary" onClick={() => setEditing({ key: newId(), product: null })}>
-          {fr.common.add}
-        </Button>
-      </div>
-      {editing && <ProductForm key={editing.key} initial={editing.product} defaultRate={defaultRate} onDone={() => setEditing(null)} />}
-      <TextField label={fr.common.search} value={query} onChange={setQuery} type="search" />
-      {products && visible.length === 0 && <p className="text-sm text-muted">{fr.common.none}</p>}
-      <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title={fr.nav.products}
+        subtitle={products ? `${products.length} produit${products.length > 1 ? "s" : ""}` : undefined}
+        actions={
+          <Button variant="primary" size="lg" icon="plus" onClick={() => openForm(null)}>
+            {fr.common.add}
+          </Button>
+        }
+      />
+      <SearchField label={fr.common.search} value={query} onChange={setQuery} />
+      {!products && (
+        <div className="flex flex-col gap-3" aria-busy="true">
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+        </div>
+      )}
+      {products && products.length === 0 && <EmptyState title="Aucun produit" text={fr.common.none} />}
+      {products && products.length > 0 && visible.length === 0 && <p className="py-6 text-center text-muted">{fr.dashboard.noMatch}</p>}
+      <ul className="flex flex-col gap-3">
         {visible.map((p) => (
-          <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-            <div>
-              <p className="font-medium">{p.designation}</p>
-              <p className="text-xs text-muted">
+          <li key={p.id} className="rise flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 shadow-[var(--shadow)]">
+            <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
+              <Icon name="products" size={24} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-semibold">{p.designation}</p>
+              <p className="text-sm text-muted tabular-nums">
                 {formatDA(p.unitPriceCentimes)} HT{p.unit && ` / ${p.unit}`} · TVA {formatPercent(p.tvaRateBp)}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setEditing({ key: p.id, product: p })}>{fr.common.edit}</Button>
-              <Button variant="danger" onClick={() => onDelete(p)}>
-                {fr.common.delete}
-              </Button>
-            </div>
+            <IconButton icon="edit" label={`${fr.common.edit} ${p.designation}`} onClick={() => openForm(p)} />
+            <IconButton icon="trash" label={`${fr.common.delete} ${p.designation}`} variant="danger" onClick={() => setToDelete(p)} />
           </li>
         ))}
       </ul>
+
+      <Sheet open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }} title={editing?.product ? editing.product.designation : "Nouveau produit"}>
+        {editing && <ProductForm key={editing.key} initial={editing.product} defaultRate={defaultRate} onDone={() => setFormOpen(false)} />}
+      </Sheet>
+      <ConfirmSheet
+        open={toDelete !== null}
+        title={fr.common.delete}
+        confirmLabel={fr.common.delete}
+        tone="danger"
+        onCancel={() => setToDelete(null)}
+        onConfirm={async () => {
+          const p = toDelete;
+          setToDelete(null);
+          if (p) await getDb().products.delete(p.id);
+        }}
+      >
+        <p>{toDelete ? `${toDelete.designation} : ` : ""}{fr.common.confirmDelete}</p>
+      </ConfirmSheet>
     </div>
   );
 }
