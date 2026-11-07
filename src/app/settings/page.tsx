@@ -1,5 +1,6 @@
 "use client";
 
+import { AccountPanel } from "@/components/AccountPanel";
 import { BackupPanel } from "@/components/BackupPanel";
 import { BusinessForm } from "@/components/BusinessForm";
 import { PageHeader } from "@/components/ui";
@@ -16,6 +17,7 @@ export default function SettingsPage() {
       <PageHeader title={fr.nav.settings} />
       {/* Initial value only: a backup restore reloads the page. */}
       {business !== undefined && <BusinessForm initial={business} />}
+      <AccountPanel />
       <BackupPanel />
     </div>
   );
