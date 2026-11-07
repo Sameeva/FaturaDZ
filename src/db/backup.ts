@@ -93,6 +93,19 @@ export function reconcileCounters(backup: Backup, local: readonly Counter[] = []
   return [...last].map(([key, value]) => ({ key, last: value }));
 }
 
+/**
+ * Numbers of final documents that exist locally but not in the backup.
+ * Restoring would erase them, so the user is warned before confirming.
+ */
+export async function findFinalsMissingFromBackup(db: FaturaDb, backup: Backup): Promise<string[]> {
+  const inBackup = new Set(backup.documents.map((d) => d.id));
+  const local = await db.documents.where("status").equals("final").toArray();
+  return local
+    .filter((d) => !inBackup.has(d.id))
+    .map((d) => (d.status === "final" ? d.number : d.id))
+    .sort();
+}
+
 /** Replaces all local data with the backup, atomically. */
 export async function restoreBackup(db: FaturaDb, backup: Backup): Promise<void> {
   const counters = reconcileCounters(backup, await db.counters.toArray());

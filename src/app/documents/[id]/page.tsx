@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { DraftEditor } from "@/components/editor/DraftEditor";
 import { FinalView } from "@/components/editor/FinalView";
-import { Notice } from "@/components/ui";
+import { Notice, Skeleton } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 
 export default function DocumentPage() {
@@ -15,7 +15,14 @@ export default function DocumentPage() {
     [id],
   );
 
-  if (!data) return null;
+  if (!data)
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true" aria-label="Chargement">
+        <Skeleton className="h-12 w-2/3" />
+        <Skeleton className="h-40" />
+        <Skeleton className="h-40" />
+      </div>
+    );
   if (!data.doc) {
     return (
       <div className="flex flex-col gap-3">

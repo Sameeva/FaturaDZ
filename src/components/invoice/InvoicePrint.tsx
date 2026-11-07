@@ -22,9 +22,9 @@ function Ids({ ids }: { ids: [string, string][] }) {
  * document, so figures and wording are identical. Hidden on screen, shown by `window.print()`;
  * the page chrome is hidden by the @media print rules in globals.css.
  */
-export function InvoicePrint({ model }: { model: PdfModel }) {
+export function InvoicePrint({ model, preview = false }: { model: PdfModel; preview?: boolean }) {
   return (
-    <article className="invoice-sheet hidden print:block" aria-label={model.title}>
+    <article className={preview ? "invoice-sheet p-[12mm]" : "invoice-sheet hidden print:block"} aria-label={model.title}>
       <header className="mb-4 flex justify-between gap-6">
         <div className="flex max-w-[60%] gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- stored data URL, printed as-is */}

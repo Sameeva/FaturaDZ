@@ -91,6 +91,14 @@ export const fr = {
     deleteDraft: "Supprimer le brouillon",
     locked: "Ce document est finalisé : il ne peut plus être modifié. Dupliquez-le pour faire une correction.",
     draftSaved: "Brouillon enregistré automatiquement.",
+    savedShort: "Enregistré",
+    savingShort: "Enregistrement…",
+    unsavedShort: "Non enregistré : corrigez les champs en erreur",
+    deleteDraftConfirm: "Supprimer ce brouillon ? Cette action est définitive.",
+    finalizeTitle: "Finaliser ce document ?",
+    finalizeBody: "Un numéro définitif lui sera attribué et il ne pourra plus être modifié.",
+    finalizeCheck: "À vérifier avant de continuer",
+    previewTitle: "Aperçu du document",
     timbreHint:
       "Barème LF 2025 (art. 100 du Code du timbre). Vérifiez avec votre comptable si votre situation est particulière.",
     number: "N°",
@@ -106,6 +114,19 @@ export const fr = {
     setupFirst: "Commencez par renseigner les informations de votre entreprise.",
     goSettings: "Aller aux paramètres",
     exportCsv: "Exporter en CSV",
+    newDocument: "Nouveau",
+    newDocumentTitle: "Que voulez-vous créer ?",
+    factureHint: "Document officiel avec numéro, TVA et identifiants fiscaux.",
+    recuHint: "Justificatif simple de paiement, numéroté RE-AAAA-NNNN.",
+    finalizedThisMonth: "Factures finalisées ce mois",
+    drafts: "Brouillons",
+    draftsToFinish: "à terminer",
+    documentsCount: "documents",
+    noMatch: "Aucun document ne correspond à votre recherche.",
+    searchPlaceholder: "Client ou numéro",
+    filterLabel: "Filtrer les documents",
+    factures: "Factures",
+    recus: "Reçus",
   },
   backup: {
     title: "Sauvegarde",
@@ -115,6 +136,13 @@ export const fr = {
     import: "Restaurer une sauvegarde…",
     importConfirm:
       "La restauration remplace TOUTES les données actuelles de ce navigateur par celles de la sauvegarde. Continuer ?",
+    missingFinals: (numbers: string[]) => {
+      const shown = numbers.slice(0, 5).join(", ");
+      const more = numbers.length > 5 ? ` et ${numbers.length - 5} autre(s)` : "";
+      return numbers.length === 1
+        ? `Attention : cette sauvegarde ne contient pas le document déjà émis ${shown}. Il sera effacé de ce navigateur. Son numéro reste réservé : il ne sera pas réattribué.`
+        : `Attention : cette sauvegarde ne contient pas les ${numbers.length} documents déjà émis ${shown}${more}. Ils seront effacés de ce navigateur. Leurs numéros restent réservés : ils ne seront pas réattribués.`;
+    },
     imported: "Sauvegarde restaurée.",
   },
   errors: {

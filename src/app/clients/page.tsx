@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Notice, TextField } from "@/components/ui";
+import { ConfirmSheet } from "@/components/ConfirmSheet";
+import { Sheet } from "@/components/Sheet";
+import { Button, EmptyState, IconButton, Notice, PageHeader, SearchField, Skeleton, TextField } from "@/components/ui";
 import { useDbQuery } from "@/components/useDb";
 import { getDb } from "@/db";
 import { describeDbError } from "@/db/errors";
@@ -45,7 +47,7 @@ function ClientForm({ initial, onDone }: { initial: Client; onDone: () => void }
   }
 
   return (
-    <Card title={initial.name ? initial.name : "Nouveau client"}>
+    <div>
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField label={fr.fields.name} value={form.name} onChange={(v) => set("name", v)} error={nameError} required />
         {field("address")}
@@ -63,49 +65,84 @@ function ClientForm({ initial, onDone }: { initial: Client; onDone: () => void }
         <Button onClick={onDone}>{fr.common.cancel}</Button>
       </div>
       {error && <div className="mt-3"><Notice tone="danger">{error}</Notice></div>}
-    </Card>
+    </div>
+  );
+}
+
+function Avatar({ name }: { name: string }) {
+  const letters = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+  return (
+    <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent-soft font-display text-lg font-bold text-accent">
+      {letters || "?"}
+    </span>
   );
 }
 
 export default function ClientsPage() {
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<Client | null>(null);
   const clients = useDbQuery((db) => db.clients.orderBy("name").toArray());
 
   const q = query.trim().toLowerCase();
   const visible = (clients ?? []).filter((c) => !q || c.name.toLowerCase().includes(q) || c.nif.includes(q));
-
-  async function onDelete(c: Client) {
-    if (window.confirm(fr.common.confirmDelete)) await getDb().clients.delete(c.id);
-  }
+  const openForm = (c: Client) => {
+    setEditing(c);
+    setFormOpen(true);
+  };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">{fr.nav.clients}</h1>
-        <Button variant="primary" onClick={() => setEditing(emptyClient())}>
-          {fr.common.add}
-        </Button>
-      </div>
-      {editing && <ClientForm key={editing.id} initial={editing} onDone={() => setEditing(null)} />}
-      <TextField label={fr.common.search} value={query} onChange={setQuery} type="search" />
-      {clients && visible.length === 0 && <p className="text-sm text-muted">{fr.common.none}</p>}
-      <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title={fr.nav.clients}
+        subtitle={clients ? `${clients.length} client${clients.length > 1 ? "s" : ""}` : undefined}
+        actions={
+          <Button variant="primary" size="lg" icon="plus" onClick={() => openForm(emptyClient())}>
+            {fr.common.add}
+          </Button>
+        }
+      />
+      <SearchField label={fr.common.search} value={query} onChange={setQuery} />
+      {!clients && (
+        <div className="flex flex-col gap-3" aria-busy="true">
+          <Skeleton className="h-20" />
+          <Skeleton className="h-20" />
+        </div>
+      )}
+      {clients && clients.length === 0 && <EmptyState title="Aucun client" text={fr.common.none} />}
+      {clients && clients.length > 0 && visible.length === 0 && <p className="py-6 text-center text-muted">{fr.dashboard.noMatch}</p>}
+      <ul className="flex flex-col gap-3">
         {visible.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-            <div>
-              <p className="font-medium">{c.name}</p>
-              <p className="text-xs text-muted">{[c.address, c.nif && `${fr.fiscalShort.nif} ${c.nif}`].filter(Boolean).join(" · ")}</p>
+          <li key={c.id} className="rise flex items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 shadow-[var(--shadow)]">
+            <Avatar name={c.name} />
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-semibold">{c.name}</p>
+              <p className="truncate text-sm text-muted">{[c.address, c.nif && `${fr.fiscalShort.nif} ${c.nif}`].filter(Boolean).join(" · ") || "—"}</p>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setEditing(c)}>{fr.common.edit}</Button>
-              <Button variant="danger" onClick={() => onDelete(c)}>
-                {fr.common.delete}
-              </Button>
-            </div>
+            <IconButton icon="edit" label={`${fr.common.edit} ${c.name}`} onClick={() => openForm(c)} />
+            <IconButton icon="trash" label={`${fr.common.delete} ${c.name}`} variant="danger" onClick={() => setToDelete(c)} />
           </li>
         ))}
       </ul>
+
+      <Sheet open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }} title={editing?.name ? editing.name : "Nouveau client"}>
+        {editing && <ClientForm key={editing.id} initial={editing} onDone={() => setFormOpen(false)} />}
+      </Sheet>
+      <ConfirmSheet
+        open={toDelete !== null}
+        title={fr.common.delete}
+        confirmLabel={fr.common.delete}
+        tone="danger"
+        onCancel={() => setToDelete(null)}
+        onConfirm={async () => {
+          const c = toDelete;
+          setToDelete(null);
+          if (c) await getDb().clients.delete(c.id);
+        }}
+      >
+        <p>{toDelete ? `${toDelete.name} : ` : ""}{fr.common.confirmDelete}</p>
+      </ConfirmSheet>
     </div>
   );
 }

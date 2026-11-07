@@ -9,15 +9,15 @@ import { totalsRows } from "@/lib/totalsRows";
 export function TotalsPanel({ totals, type }: { totals: Totals; type: DocumentType }) {
   return (
     <Card title="Totaux">
-      <dl className="ms-auto flex max-w-md flex-col gap-1 text-sm">
+      <dl className="ms-auto flex max-w-md flex-col gap-1.5 text-[0.9375rem]">
         {totalsRows(totals).map(([label, value]) => (
           <Row key={label} label={label} value={value} />
         ))}
-        <div className="mt-1 border-t border-foreground pt-1 text-base font-bold">
+        <div className="mt-1 border-t-2 border-foreground pt-2 font-display text-lg font-bold">
           <Row label={fr.totals.net} value={formatDA(totals.netAPayerCentimes)} />
         </div>
       </dl>
-      <p className="mt-3 text-sm text-muted">
+      <p className="mt-4 border-t border-border pt-3 text-sm text-muted">
         {type === "facture" ? fr.totals.inWordsFacture : fr.totals.inWordsRecu}{" "}
         <span className="font-medium text-foreground">{amountInWords(totals.netAPayerCentimes)}</span>
       </p>
