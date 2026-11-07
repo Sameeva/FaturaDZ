@@ -57,7 +57,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 export async function requestPasswordReset(email: string): Promise<AuthResult> {
   const sb = client();
   if (!sb) return fail(e.notConfigured);
-  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${origin()}/auth/callback?next=/reset-password` });
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: `${origin()}/auth/recovery` });
   // Unknown addresses are not reported, only rate limits.
   if (error && (error.code === "over_request_rate_limit" || error.code === "over_email_send_rate_limit")) return fail(e.rateLimited);
   return { ok: true };

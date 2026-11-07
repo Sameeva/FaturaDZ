@@ -11,13 +11,13 @@ import { Divider, PasswordField } from "./fields";
 import { GoogleButton } from "./GoogleButton";
 import { isValidEmail } from "./passwordRules";
 
-export function LoginForm() {
+export function LoginForm({ linkError = false }: { linkError?: boolean }) {
   const router = useRouter();
   const t = fr.auth;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(linkError ? t.errors.linkInvalid : "");
   const [pending, setPending] = useState(false);
 
   async function submit(e: FormEvent) {

@@ -201,6 +201,7 @@ export const fr = {
       rateLimited: "Trop de tentatives. Patientez quelques minutes puis réessayez.",
       samePassword: "Choisissez un mot de passe différent de l'ancien.",
       notConfigured: "La connexion n'est pas encore configurée.",
+      linkInvalid: "Ce lien a expiré ou n'est plus valide. Ouvrez-le dans le navigateur où vous l'avez demandé, ou refaites la demande.",
     },
     reset: {
       title: "Nouveau mot de passe",
