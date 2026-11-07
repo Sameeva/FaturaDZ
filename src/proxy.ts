@@ -1,4 +1,6 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import { supabaseEnv } from "@/lib/supabase/env";
 
 /**
  * Builds the Content-Security-Policy for one request.
@@ -8,9 +10,11 @@ import { NextRequest, NextResponse } from "next/server";
  * - 'wasm-unsafe-eval' is needed by the PDF layout engine (yoga, WebAssembly);
  *   it allows compiling WebAssembly only, not JavaScript eval.
  * - Images: self, data: (stored logo) and blob: (PDF preview).
- * - No third-party origins anywhere; the app never talks to a server.
+ * - Invoices never leave the browser. The only network origin besides this one is the
+ *   Supabase project (accounts only), passed as `supabaseUrl`.
  */
-export function buildCsp(nonce: string, isDev: boolean): string {
+export function buildCsp(nonce: string, isDev: boolean, supabaseUrl?: string): string {
+  const supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
   const directives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -18,7 +22,7 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     "img-src 'self' data: blob:",
     "font-src 'self'",
     // data: lets the PDF engine load its inlined WebAssembly; reading a data: URL sends nothing out.
-    "connect-src 'self' data:" + (isDev ? " ws:" : ""),
+    "connect-src 'self' data:" + (supabaseOrigin ? ` ${supabaseOrigin}` : "") + (isDev ? " ws:" : ""),
     "frame-src 'self' blob:",
     "worker-src 'self' blob:",
     "object-src 'none'",
@@ -30,15 +34,53 @@ export function buildCsp(nonce: string, isDev: boolean): string {
   return directives.join("; ");
 }
 
-export function proxy(request: NextRequest) {
+/** Pages reachable without an account. /reset-password needs the session the email link creates. */
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth", "/confidentialite"];
+const isPublic = (path: string) => PUBLIC_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
+
+export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const csp = buildCsp(nonce, process.env.NODE_ENV === "development");
+  const env = supabaseEnv();
+  const csp = buildCsp(nonce, process.env.NODE_ENV === "development", env?.url);
 
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", csp);
+  // Rebuilt after a token refresh so the page sees the refreshed cookies.
+  const forward = () => {
+    const headers = new Headers(request.headers);
+    headers.set("x-nonce", nonce);
+    headers.set("Content-Security-Policy", csp);
+    return NextResponse.next({ request: { headers } });
+  };
+  let response = forward();
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  if (env) {
+    const supabase = createServerClient(env.url, env.key, {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (list) => {
+          list.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = forward();
+          list.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    });
+    let signedIn = false;
+    try {
+      // Verifies the token (and refreshes it when expired); a failure counts as signed out.
+      const { data } = await supabase.auth.getClaims();
+      signedIn = Boolean(data?.claims);
+    } catch {
+      signedIn = false;
+    }
+    const path = request.nextUrl.pathname;
+    const redirectTo = !signedIn && !isPublic(path) ? "/login" : signedIn && (path === "/login" || path === "/register") ? "/" : null;
+    if (redirectTo) {
+      const redirect = NextResponse.redirect(new URL(redirectTo, request.url));
+      response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+      redirect.headers.set("Content-Security-Policy", csp);
+      return redirect;
+    }
+  }
+
   response.headers.set("Content-Security-Policy", csp);
   return response;
 }

@@ -12,6 +12,8 @@ const LINKS: { href: string; label: string; icon: IconName }[] = [
   { href: "/settings", label: fr.nav.settings, icon: "settings" },
 ];
 
+const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+
 function Mark() {
   return (
     <span aria-hidden="true" className="grid size-9 place-items-center rounded-xl bg-accent text-accent-contrast">
@@ -25,6 +27,7 @@ function Mark() {
 
 export function AppNav() {
   const pathname = usePathname();
+  if (AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
   const inDocument = pathname.startsWith("/documents");
   const isActive = (href: string) => (href === "/" ? pathname === "/" || inDocument : pathname.startsWith(href));
 

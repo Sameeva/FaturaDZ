@@ -4,7 +4,7 @@
 
 Invoice (facture) and receipt (reçu) maker for Algerian businesses. It prints the legal details (NIF, NIS, RC, Article d'imposition), computes TVA and the droit de timbre, and produces a PDF in the browser.
 
-Everything runs locally in the browser: data is stored in IndexedDB on the user's device, nothing is sent to a server. Users should export a backup regularly (Paramètres → Sauvegarde).
+Invoices, clients and products stay in the browser (IndexedDB on the user's device) and are never sent to a server. When accounts are configured, only the sign-in itself (email or Google) goes through Supabase Auth. Users should export a backup regularly (Paramètres → Sauvegarde).
 
 **Live demo:** https://fatura-dz.vercel.app
 
