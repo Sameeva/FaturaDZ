@@ -3,7 +3,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { FaturaDb } from "./index";
 import { describeDbError } from "./errors";
 import { fr } from "@/i18n/fr";
-import { exportBackup, MAX_BACKUP_BYTES, parseBackup, reconcileCounters, restoreBackup } from "./backup";
+import {
+  exportBackup,
+  findFinalsMissingFromBackup,
+  MAX_BACKUP_BYTES,
+  parseBackup,
+  reconcileCounters,
+  restoreBackup,
+} from "./backup";
 import { deleteDraft, duplicateAsDraft, finalizeDocument, newDraft, saveBusiness, saveDraft } from "./repository";
 import type { Business, DraftDocument } from "./schema";
 
@@ -189,6 +196,15 @@ describe("backup", () => {
     const next = await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
     expect(next.number).not.toBe(second.number);
     expect(next.number).toMatch(/-0003$/);
+  });
+
+  it("lists the local finals that a backup does not contain", async () => {
+    await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    const backup = await exportBackup(db);
+    expect(await findFinalsMissingFromBackup(db, backup)).toEqual([]);
+    await saveDraft(db, draftWith()); // a draft is not reported
+    const second = await finalizeDocument(db, (await saveDraft(db, draftWith())).id);
+    expect(await findFinalsMissingFromBackup(db, backup)).toEqual([second.number]);
   });
 
   it("rejects a final document whose number does not match its type or year", async () => {

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { getDb } from "@/db";
 import { describeDbError } from "@/db/errors";
-import { exportBackup, MAX_BACKUP_BYTES, parseBackup, restoreBackup } from "@/db/backup";
+import { exportBackup, findFinalsMissingFromBackup, MAX_BACKUP_BYTES, parseBackup, restoreBackup } from "@/db/backup";
 import type { Backup } from "@/db/schema";
 import { todayIso } from "@/db/repository";
 import { fr } from "@/i18n/fr";
@@ -16,6 +16,7 @@ const RESTORED_KEY = "faturadz:restored";
 export function BackupPanel() {
   const [message, setMessage] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
   const [pending, setPending] = useState<Backup | null>(null);
+  const [missing, setMissing] = useState<string[]>([]);
 
   // A restore reloads the page; the confirmation survives the reload through sessionStorage.
   useEffect(() => {
@@ -53,6 +54,12 @@ export function BackupPanel() {
     const result = parseBackup(text);
     if (!result.ok) {
       setMessage({ tone: "danger", text: result.error });
+      return;
+    }
+    try {
+      setMissing(await findFinalsMissingFromBackup(getDb(), result.backup));
+    } catch (err) {
+      setMessage({ tone: "danger", text: describeDbError(err) });
       return;
     }
     setPending(result.backup);
@@ -96,6 +103,7 @@ export function BackupPanel() {
         onCancel={() => setPending(null)}
       >
         <p>{fr.backup.importConfirm}</p>
+        {missing.length > 0 && <p className="mt-3 font-semibold text-danger">{fr.backup.missingFinals(missing)}</p>}
       </ConfirmSheet>
     </Card>
   );

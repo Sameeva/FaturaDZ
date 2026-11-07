@@ -136,6 +136,13 @@ export const fr = {
     import: "Restaurer une sauvegarde…",
     importConfirm:
       "La restauration remplace TOUTES les données actuelles de ce navigateur par celles de la sauvegarde. Continuer ?",
+    missingFinals: (numbers: string[]) => {
+      const shown = numbers.slice(0, 5).join(", ");
+      const more = numbers.length > 5 ? ` et ${numbers.length - 5} autre(s)` : "";
+      return numbers.length === 1
+        ? `Attention : cette sauvegarde ne contient pas le document déjà émis ${shown}. Il sera effacé de ce navigateur. Son numéro reste réservé : il ne sera pas réattribué.`
+        : `Attention : cette sauvegarde ne contient pas les ${numbers.length} documents déjà émis ${shown}${more}. Ils seront effacés de ce navigateur. Leurs numéros restent réservés : ils ne seront pas réattribués.`;
+    },
     imported: "Sauvegarde restaurée.",
   },
   errors: {

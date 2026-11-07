@@ -180,7 +180,7 @@ export function DraftEditor({ initial, business }: { initial: DraftDocument; bus
   const canFinalize = Boolean(draft) && draft!.lines.length > 0 && !busy && !totalsError;
 
   return (
-    <div ref={rootRef} className="flex flex-col gap-5" onFocusCapture={onFocusCapture} onBlurCapture={onBlurCapture}>
+    <div ref={rootRef} className="flex flex-col gap-5 md:pb-16" onFocusCapture={onFocusCapture} onBlurCapture={onBlurCapture}>
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
